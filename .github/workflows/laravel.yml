@@ -1,0 +1,72 @@
+name: Laravel CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  dusk-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: homestead
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=10s
+          --health-retries=5
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '7.4'
+        extensions: mbstring, xml, ctype, iconv, intl, mysql
+        tools: composer, phpunit
+
+    - name: Copy .env
+      run: php -r "file_exists('.env') || copy('.env.dusk.local', '.env');"
+
+    - name: Install Dependencies
+      run: composer install --prefer-dist --no-progress --no-suggest
+
+    - name: Generate key
+      run: php artisan key:generate
+
+    - name: Directory Permissions
+      run: sudo chmod -R 777 storage bootstrap/cache
+
+    - name: Run Migrations
+      run: php artisan migrate
+
+    - name: Start ChromeDriver
+      run: ./vendor/laravel/dusk/bin/chromedriver-linux --port=9515 &
+
+    - name: Execute Dusk Tests
+      run: php artisan dusk
+      env:
+        APP_URL: http://localhost:8000
+
+    - name: Upload Screenshots on Failure
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: dusk-screenshots
+        path: tests/Browser/screenshots
+
+    - name: Upload Browser Console Logs on Failure
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: dusk-console-logs
+        path: tests/Browser/console
