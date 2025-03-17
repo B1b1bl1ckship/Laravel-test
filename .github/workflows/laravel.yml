@@ -19,13 +19,12 @@ jobs:
           python-version: "3.9"
 
       - name: Install dependencies
-  run: |
-    pip install selenium beautifulsoup4 requests openai webdriver-manager
-    sudo apt-get update && sudo apt-get install -y xvfb chromium-chromedriver
-    if [ ! -f "/usr/bin/chromedriver" ]; then
-        ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
-    fi
-
+        run: |
+          pip install selenium beautifulsoup4 requests openai webdriver-manager
+          sudo apt-get update && sudo apt-get install -y xvfb chromium-chromedriver
+          if [ ! -f "/usr/bin/chromedriver" ]; then
+              ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
+          fi
 
       - name: Run crawler to discover endpoints
         run: python scripts/crawler.py
@@ -44,5 +43,3 @@ jobs:
         with:
           name: test-results
           path: results/
-
-  
