@@ -42,12 +42,4 @@ jobs:
           name: test-results
           path: results/
 
-  download_results:
-    needs: test_website  # Ensures download happens after the upload job
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: test-results
-          path: ./downloaded_results  # Specify where to store the downloaded artifacts
+  
