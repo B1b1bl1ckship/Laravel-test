@@ -1,72 +1,49 @@
-name: Laravel CI
+name: Automated Website Testing & Report Deployment
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
-  dusk-tests:
+  test_website:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:5.7
-        env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: homestead
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=10s
-          --health-retries=5
-
     steps:
-    - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '7.4'
-        extensions: mbstring, xml, ctype, iconv, intl, mysql
-        tools: composer, phpunit
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
 
-    - name: Copy .env
-      run: php -r "file_exists('.env') || copy('.env.dusk.local', '.env');"
+      - name: Install dependencies
+        run: |
+          pip install selenium beautifulsoup4 requests openai
+          sudo apt-get update && sudo apt-get install -y xvfb chromium-chromedriver
+          ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
 
-    - name: Install Dependencies
-      run: composer install --prefer-dist --no-progress --no-suggest
+      - name: Run crawler to discover endpoints
+        run: python scripts/crawler.py
 
-    - name: Generate key
-      run: php artisan key:generate
+      - name: Capture screenshots using Selenium
+        run: python scripts/screenshot.py
 
-    - name: Directory Permissions
-      run: sudo chmod -R 777 storage bootstrap/cache
+      - name: Generate AI-driven test cases
+        run: python scripts/generate_tests.py
 
-    - name: Run Migrations
-      run: php artisan migrate
+      - name: Generate test report
+        run: python scripts/generate_report.py
 
-    - name: Start ChromeDriver
-      run: ./vendor/laravel/dusk/bin/chromedriver-linux --port=9515 &
+      - name: Upload Screenshots & Report as Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: results/
 
-    - name: Execute Dusk Tests
-      run: php artisan dusk
-      env:
-        APP_URL: http://localhost:8000
-
-    - name: Upload Screenshots on Failure
-      uses: actions/upload-artifact@v2
-      if: failure()
-      with:
-        name: dusk-screenshots
-        path: tests/Browser/screenshots
-
-    - name: Upload Browser Console Logs on Failure
-      uses: actions/upload-artifact@v2
-      if: failure()
-      with:
-        name: dusk-console-logs
-        path: tests/Browser/console
+      - name: Deploy Report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./results  # Deploys report to GitHub Pages
