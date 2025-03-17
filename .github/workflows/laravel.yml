@@ -26,6 +26,10 @@ jobs:
               ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
           fi
 
+      - name: Ensure results directory exists
+        run: mkdir -p results
+
+
       - name: Run crawler to discover endpoints
         run: python scripts/crawler.py
 
