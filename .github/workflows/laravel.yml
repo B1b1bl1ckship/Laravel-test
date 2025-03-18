@@ -17,26 +17,28 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: "3.9"
-          
+
       - name: Restore previous results (if exists)
         uses: actions/cache@v3
         with:
           path: results/
-          key: results-${{ github.run_id }}
-          restore-keys: results-
-          
+          key: results-cache
+          restore-keys: results-cache-
 
       - name: Install dependencies
         run: |
           pip install selenium beautifulsoup4 requests openai webdriver-manager
-          sudo apt-get update && sudo apt-get install -y xvfb chromium-chromedriver
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable xvfb chromium-chromedriver
           if [ ! -f "/usr/bin/chromedriver" ]; then
               ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
           fi
 
       - name: Ensure results directory exists
-        run: mkdir -p results
+        run: mkdir -p results/screenshots
 
+      - name: Debug: Verify results folder exists
+        run: ls -la results/
 
       - name: Run crawler to discover endpoints
         run: python scripts/crawler.py
@@ -49,6 +51,12 @@ jobs:
 
       - name: Generate test report
         run: python scripts/generate_report.py
+
+      - name: Save results for next runs
+        uses: actions/upload-artifact@v4
+        with:
+          name: stored-results
+          path: results/
 
       - name: Upload Screenshots & Report as Artifacts
         uses: actions/upload-artifact@v4
