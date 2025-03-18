@@ -17,6 +17,14 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: "3.9"
+          
+      - name: Restore previous results (if exists)
+        uses: actions/cache@v3
+        with:
+          path: results/
+          key: results-${{ github.run_id }}
+          restore-keys: results-
+          
 
       - name: Install dependencies
         run: |
