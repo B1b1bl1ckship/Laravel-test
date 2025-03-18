@@ -1,7 +1,9 @@
+import os
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import json
+import warnings
 
 START_URL = "https://firstfocus.com"
 visited = set()
